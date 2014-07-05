@@ -44,37 +44,49 @@ module View.User where
   import Happstack.Server.FileServe
   import System.Log.Logger
   import Model.User
-  import View.Template
-  import View.Comments
+  import View.Application
 
------------------------------------------- CREATE ONE POST --------------------------------------------
   createRegisterForm :: String -> String -> ServerPart Response
   createRegisterForm post_url error_message = ok $ toResponse $
-      appTemplate "Programación Funcional" [] $ do
-        H.div (H.h1 "Register") H.! A.class_ "page-header"
+      basicTemplate "Haster!" [] $ do
+        H.div (H.h1 "Register to haster") 
         H.form H.! A.enctype "multipart/form-data" H.! A.class_ "form-horizontal" 
           H.! A.method "POST"
           H.! A.action (stringValue post_url) $ do
             H.p (H.toHtml error_message)
-            H.div H.! A.class_ "control-group" $ do
-              H.label "Username" H.! A.class_ "control-label"
-              H.div H.! A.class_ "controls" $ do  
+            H.div H.! A.class_ "row" $ do
+              H.div H.! A.class_ "large-12 columns margined" $ do
+                H.label "Username"
+                H.br
                 H.input H.! A.type_ "text" H.! A.name "username"
-            H.div H.! A.class_ "control-group" $ do
-              H.label "Password" H.! A.class_ "control-label"
-              H.div H.! A.class_ "controls" $ do  
+              H.div H.! A.class_ "large-12 columns margined" $ do
+                H.label "Password"
+                H.br
                 H.input H.! A.type_ "password" H.! A.name "password"
-            H.div H.! A.class_ "control-group" $ do
-              H.div H.! A.class_ "controls" $ do  
-                H.input H.! A.type_ "submit" H.! A.value "Register" H.! A.class_ "btn btn-primary"
-        H.a "Back" H.! A.href "/allPosts" H.! A.class_ "btn"
+              H.div H.! A.class_ "large-12 columns margined" $ do
+                H.label "Password confirmation"
+                H.br
+                H.input H.! A.type_ "password" H.! A.name "password_confirmation"
+              H.div H.! A.class_ "large-12 columns margined" $ do
+                H.input H.! A.type_ "submit" H.! A.value "Register" H.! A.class_ "button"
+        H.a "Back" H.! A.href "/feed"
 
------------------------------------------- CREATE ONE POST --------------------------------------------
-  showAllUsers :: [User] -> ServerPart Response
-  showAllUsers users = 
-    ok (toResponse (
-          appTemplate "Programación Funcional" [] $ do
-            H.div (H.h1 "Users") H.! A.class_ "page-header"
-            H.ul H.! A.class_ "unstyled" $ forM_ users (H.li . (\(User key username password) -> H.p $ H.toHtml (username ++ " " ++ password))) H.! A.class_ "alert alert-success"
-            H.a "Back" H.! A.href "/allPosts" H.! A.class_ "btn"
-      ))
+  createLoginForm :: String -> ServerPart Response
+  createLoginForm error_message = ok (toResponse (basicTemplate "Haster!" [] $ do
+        H.div (H.h1 "Welcome to haster")
+        H.form H.! A.enctype "multipart/form-data" H.! A.class_ "form-horizontal" 
+          H.! A.method "POST"
+          H.! A.action (stringValue "/login") $ do
+            H.p (H.toHtml error_message)
+            H.div H.! A.class_ "row" $ do
+              H.div H.! A.class_ "large-12 columns margined" $ do
+                H.label "Username"
+                H.br
+                H.input H.! A.type_ "text" H.! A.name "username"
+              H.div H.! A.class_ "large-12 columns margined" $ do
+                H.label "Password"
+                H.br
+                H.input H.! A.type_ "password" H.! A.name "password"
+              H.div H.! A.class_ "large-12 columns margined" $ do
+                H.input H.! A.type_ "submit" H.! A.value "Login" H.! A.class_ "button"
+              H.a "Register" H.! A.href "/register"))

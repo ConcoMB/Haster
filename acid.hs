@@ -42,79 +42,41 @@ import Data.IxSet           ( Indexable(..), IxSet(..), (@=)
                             , Proxy(..), getOne, ixFun, ixSet )
 import qualified Data.IxSet as IxSet
 import Happstack.Server.FileServe
-import Model.Blog
-import Model.Comment
+import Model.Haster
 import Model.User
 
-$(deriveSafeCopy 0 'base ''PostId)
-$(deriveSafeCopy 0 'base ''BlogPost)
-$(deriveSafeCopy 0 'base ''Blog)
+$(deriveSafeCopy 0 'base ''HasterId)
+$(deriveSafeCopy 0 'base ''Hasters)
+$(deriveSafeCopy 0 'base ''Haster)
 
-addPost :: String -> String -> Update Blog BlogPost
-addPost post_title post_content =
-    do b@Blog{..} <- get
-       let post = BlogPost { postId = nextPostId
-                             , title  = post_title
-                             , content = post_content
+getHaster :: HasterId -> Query Hasters (Maybe Haster)
+getHaster key = 
+    do Hasters{..} <- ask
+       return (getOne (hasters @= key))
+
+feed :: Query Hasters [Haster]
+feed = do
+             Hasters{..} <- ask
+             let h = IxSet.toList hasters
+             return h 
+
+addHaster :: String -> Update Hasters Haster
+addHaster haster_text =
+    do b@Hasters{..} <- get
+       let haster = Haster { hasterId = nextHasterId
+                             , text  = haster_text
                            }
-       put $ b { nextPostId = succ nextPostId
-               , posts      = IxSet.insert post posts
+       put $ b { nextHasterId = succ nextHasterId
+               , hasters      = IxSet.insert haster hasters
                }
-       return post
+       return haster
 
-getPost :: PostId -> Query Blog (Maybe BlogPost)
-getPost key = 
-    do Blog{..} <- ask
-       return (getOne (posts @= key))
+deleteHaster :: Haster -> Update Hasters ()
+deleteHaster h = do
+  b@Hasters{..} <- get
+  put $ b { hasters = IxSet.delete h hasters}
 
-
-allPosts :: Query Blog [BlogPost]
-allPosts = do
-             Blog{..} <- ask
-             let all_posts = IxSet.toList posts
-             return all_posts
-
-updatePost :: BlogPost -> Update Blog ()
-updatePost (BlogPost key title content) = do
-  b@Blog{..} <- get
-  put $ b { posts =
-             IxSet.updateIx key (BlogPost key title content) posts
-          }
-deletePost :: BlogPost -> Update Blog ()
-deletePost post = do
-  b@Blog{..} <- get
-  put $ b { posts = IxSet.delete post posts}
-
-$(makeAcidic ''Blog ['addPost, 'allPosts, 'getPost, 'updatePost, 'deletePost])
-
-
-
-
-$(deriveSafeCopy 0 'base ''CommentId)
-$(deriveSafeCopy 0 'base ''Comment)
-$(deriveSafeCopy 0 'base ''Comments)
-
-addComment :: String -> PostId -> Update Comments Comment
-addComment comment_comment_content post_postId =
-    do b@Comments{..} <- get
-       let comment = Comment { commentId = nextCommentId
-                             , comment_content  = comment_comment_content
-                             , postId = post_postId
-                           }
-       put $ b { nextCommentId = succ nextCommentId
-               , comments      = IxSet.insert comment comments
-               }
-       return comment
-
-
-getCommentsForPost :: PostId -> Query Comments [Comment]
-getCommentsForPost postId = 
-    do Comments{..} <- ask
-       let all_comments = IxSet.toList comments
-       return (Prelude.filter (\c -> (getPostId c) == postId) all_comments)
-
-
-$(makeAcidic ''Comments ['addComment, 'getCommentsForPost])
+$(makeAcidic ''Hasters ['feed, 'getHaster, 'addHaster, 'deleteHaster])
 
 $(deriveSafeCopy 0 'base ''UserId)
 $(deriveSafeCopy 0 'base ''User)
@@ -131,7 +93,6 @@ addUser new_username new_password =
                , users      = IxSet.insert user users
                }
        return user
-
 
 getUser :: String -> Query Users (Maybe User)
 getUser username = 

@@ -44,19 +44,12 @@ import Data.IxSet           ( Indexable(..), IxSet(..), (@=)
 import qualified Data.IxSet as IxSet
 import Happstack.Server.FileServe
 import System.Log.Logger
-import View.Template
-import Model.Blog
-import Model.Comment
+import View.Application
+import Model.Haster
 import Model.User
-import Controller.Auth
-import Controller.Post
-import Controller.Comment
-import Controller.User
+import Controller.Access
+import Controller.Haster
 import Acid
-
------------------------------------------- MAIN --------------------------------------------------------
-
--- simpleHTTP :: (ToMessage a) => Conf -> ServerPartT IO a -> IO ()
 
 myPolicy :: BodyPolicy
 myPolicy = (defaultBodyPolicy "/tmp/" (10*10^6) 1000 1000)
@@ -66,78 +59,56 @@ main =
   do updateGlobalLogger rootLoggerName (setLevel INFO)
      bracket (openLocalState initialUsersState)
              (createCheckpointAndClose)
-             (\userAcid -> bracket (openLocalState initialCommentsState)
-                                   (createCheckpointAndClose)
-                                   (\commentAcid -> bracket (openLocalState initialBlogState)
-                                                            (createCheckpointAndClose)
-                                                            (\acid -> simpleHTTP nullConf (
-                                                                do decodeBody myPolicy
-                                                                   msum [ 
-                                                                          dir "static" (serveDirectory DisableBrowsing [] "public"),
-                                                                          dir "register" (do
-                                                                                            method GET
-                                                                                            register),
-                                                                          dir "register" (do
-                                                                                            method POST
-                                                                                            handleRegister userAcid),
-                                                                          dir "users" (do
-                                                                                         method GET
-                                                                                         listUsers userAcid),
-                                                                          dir "login" (do
-                                                                                        method GET
-                                                                                        login),
-                                                                          dir "login" (do
-                                                                                          method POST
-                                                                                          handleLogin userAcid),
-                                                                          dir "upload" (do
-                                                                                          myAuth userAcid
-                                                                                          method GET 
-                                                                                          newForm acid),
-                                                                          dir "create_post" (do 
-                                                                                                myAuth userAcid
-                                                                                                method POST
-                                                                                                handleNewForm acid),
-                                                                          dir "posts" ( dir "create_comment" (do 
-                                                                                                  method POST
-                                                                                                  handleNewCommentForm commentAcid acid)),
-                                                                          dir "update_post" (do 
-                                                                                                myAuth userAcid
-                                                                                                method POST
-                                                                                                handleEditForm acid),
-                                                                          dir "allPosts" (do method GET
-                                                                                             handleAllPosts acid),
-                                                                          dir "posts" ( dir "delete" ( path ( (\s -> do 
-                                                                                                                        myAuth userAcid
-                                                                                                                        method POST
-                                                                                                                        handleDeletePost acid s)))),
-                                                                          dir "posts" ( do path ( (\s -> do method GET
-                                                                                                            showPost acid commentAcid s))),
-                                                                          dir "update_post" ( do path ( (\s -> do 
-                                                                                                                  myAuth userAcid
-                                                                                                                  method GET
-                                                                                                                  editForm acid s))),
-                                                                          seeOther ("/allPosts" :: String) (toResponse ())
-                                                                        ]))))
------------------------------------------- MAIN --------------------------------------------------------
-myAuth :: AcidState Users -> ServerPart ()
-myAuth acid = do
+             (\userAcid -> bracket (openLocalState initialHastersState)
+                          (createCheckpointAndClose)
+                          (\acid -> simpleHTTP nullConf (
+                              do decodeBody myPolicy
+                                 msum [ 
+                                      dir "static" (serveDirectory DisableBrowsing [] "public"),
+                                      dir "register" (do
+                                                        method GET
+                                                        register),
+                                      dir "register" (do
+                                                        method POST
+                                                        handleRegister userAcid),
+                                      dir "login" (do
+                                                    method GET
+                                                    login),
+                                      dir "login" (do
+                                                      method POST
+                                                      handleLogin userAcid),
+                                      dir "new_haster" (do
+                                                          auth userAcid
+                                                          method GET 
+                                                          newHaster acid),
+                                      dir "create_haster" (do 
+                                                            auth userAcid
+                                                            method POST
+                                                            handleNewHaster acid),
+                                      dir "feed" (do 
+                                                    method GET
+                                                    handleFeed acid),
+                                      dir "hasters" ( dir "delete" ( path ( (\s -> do 
+                                                                                    auth userAcid
+                                                                                    method POST
+                                                                                    handleDeleteHaster acid s)))),
+                                      dir "hasters" ( do path ( (\s -> do 
+                                                          method GET
+                                                          showHaster acid s))),
+                                      seeOther ("/login" :: String) (toResponse ())
+                                    ])))
+
+auth :: AcidState Users -> ServerPart ()
+auth acid = do
           userCookie <- (lookCookieValue "User")
           passwordCookie <- (lookCookieValue "Password")
           exists <- query' acid (UserExists userCookie passwordCookie)
           guard (exists)
 
-
-initialBlogState :: Blog
-initialBlogState =
-    Blog { nextPostId = PostId 1
-         , posts      = IxSet.empty
-         }
-
-initialCommentsState :: Comments
-initialCommentsState =
-    Comments { nextCommentId = CommentId 1
-              , comments      = IxSet.empty
-             }
+initialHastersState :: Hasters
+initialHastersState = 
+    Hasters { nextHasterId = HasterId 1,
+            hasters = IxSet.empty }
 
 initialUsersState :: Users
 initialUsersState = 

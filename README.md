@@ -1,7 +1,8 @@
-Programación Funcional
+Haster!
 ========================
   
 Trabajo Practico Final - Programación Funcional
+Twitter like app in Haskell using Happstack and IxSet
 
 Instructions
 ==============
@@ -16,6 +17,6 @@ Instructions
 `cabal install acid-state`
 
 
-To compile: `ghc -threaded -hide-package monads-tf-0.1.0.1 server.hs -o server`
+To compile: `ghc -threaded server.hs -o server`
 
 To run server `./server`
