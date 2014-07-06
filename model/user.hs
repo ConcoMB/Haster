@@ -53,12 +53,6 @@ isValidUser (User _ [] _) = False
 isValidUser (User _ _ []) = False
 isValidUser (User _ a b) = True
 
-getUsername :: User -> String
-getUsername (User user_id username password) = username
-
-getPassword :: User -> String
-getPassword (User user_id username password) = password
-
 instance Indexable User where
   empty = ixSet
     [ ixFun $ \bp -> [ userId bp ]]

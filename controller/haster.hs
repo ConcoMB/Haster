@@ -47,44 +47,68 @@ import View.Hasters
 import Model.Haster
 import Acid
 
-newHaster :: AcidState Hasters -> ServerPart Response
-newHaster acid = createHaster (Haster (HasterId 0) "") "/create_haster" ""
+doNewHaster :: AcidState Hasters -> ServerPart Response
+doNewHaster acid = createHaster (Haster (HasterId 0) "" "") "/create_haster" ""
 
-handleNewHaster :: AcidState Hasters -> ServerPart Response
-handleNewHaster acid =
-   do post_data <- getDataFn postRq
+doCreateHaster :: AcidState Hasters -> ServerPart Response
+doCreateHaster acid =
+   do post_data <- getDataFn hasterRq
       case post_data of
         Left e -> badRequest (toResponse (Prelude.unlines e))
-        Right (Haster (HasterId haster_id) haster_text) 
-                  | isValidHaster (Haster (HasterId haster_id) haster_text) ->
-                    do (Haster (HasterId haster_id) haster_text) <- update' acid (AddHaster haster_text)
-                       return (redirect 302 ("feed" :: String) (toResponse ()))
-                  | otherwise -> createHaster (Haster (HasterId 0) "") "/create_post" "Text cannot be empty dude"
+        Right (Haster (HasterId haster_id) haster_text username) 
+                  | isValidHaster (Haster (HasterId haster_id) haster_text username) ->
+                    do (Haster (HasterId haster_id) haster_text username) <- update' acid (AddHaster haster_text username)
+                       return (redirect 302 ("/feed" :: String) (toResponse ()))
+                  | otherwise -> createHaster (Haster (HasterId 0) "" "") "/create_post" "Text cannot be empty dude"
 
-showHaster :: AcidState Hasters -> Integer -> ServerPart Response
-showHaster acid haster_id =
-            do haster <- query' acid (GetHaster (HasterId haster_id))
-               case haster of
-                  Just haster -> do
-                                buildShowResponse haster
-                  Nothing -> badRequest (toResponse (("Could not find haster with id " ++ show haster_id) :: String))
-
-handleDeleteHaster :: AcidState Hasters -> Integer -> ServerPart Response
-handleDeleteHaster acid haster_id = 
-            do to_delete <- query' acid (GetHaster (HasterId haster_id))
-               case to_delete of
-                Just h -> do 
-                            update' acid (DeleteHaster h)
-                            return (redirect 302 ("/feed" :: String) (toResponse ()))
+doShowHaster :: AcidState Hasters -> Integer -> ServerPart Response
+doShowHaster acid haster_id = 
+   do d <- getDataFn userCookieRq
+      case d of
+        Left e -> badRequest (toResponse (Prelude.unlines e))
+        Right (UserCookie u) ->
+           do haster <- query' acid (GetHaster (HasterId haster_id))
+              case haster of
+                Just haster ->  do buildShowResponse haster u
                 Nothing -> badRequest (toResponse (("Could not find haster with id " ++ show haster_id) :: String))
 
-handleFeed :: AcidState Hasters -> ServerPart Response
-handleFeed acid = 
-  do hasters <- query' acid Feed
-     buildResponse hasters
+doDeleteHaster :: AcidState Hasters -> Integer -> ServerPart Response
+doDeleteHaster acid haster_id = 
+  do to_delete <- query' acid (GetHaster (HasterId haster_id))
+     case to_delete of
+      Just h -> do 
+                  update' acid (DeleteHaster h)
+                  return (redirect 302 ("/feed" :: String) (toResponse ()))
+      Nothing -> badRequest (toResponse (("Could not find haster with id " ++ show haster_id) :: String))
 
-postRq :: RqData Haster
-postRq = do
-          text <- look "haster_text"
-          hasterId <- lookRead "haster_id"
-          return (Haster (HasterId hasterId) text)
+doFeed :: AcidState Hasters -> ServerPart Response
+doFeed acid = 
+  do hasters <- query' acid Feed
+     buildFeed hasters
+
+doRehast :: AcidState Hasters -> Integer -> ServerPart Response
+doRehast acid haster_id = 
+  do rehast <- query' acid (GetHaster (HasterId haster_id))
+     case rehast of
+      Just (Haster (HasterId id) text user_a) -> 
+        do d <- getDataFn userCookieRq
+           case d of
+              Left e -> badRequest (toResponse (Prelude.unlines e))
+              Right (UserCookie u) ->
+                do (Haster (HasterId id) text u) <- update' acid (AddHaster text u)
+                   return (redirect 302 ("/feed" :: String) (toResponse ()))
+      Nothing -> badRequest (toResponse (("Could not find haster with id " ++ show haster_id) :: String))
+
+hasterRq :: RqData Haster
+hasterRq = do
+  text <- look "haster_text"
+  hasterId <- lookRead "haster_id"
+  username <- lookCookieValue "User"
+  return (Haster (HasterId hasterId) text username)
+
+data UserCookie = UserCookie { user_name :: String }
+
+userCookieRq :: RqData UserCookie
+userCookieRq = do
+  user_name <- lookCookieValue "cookie_user"
+  return (UserCookie user_name)

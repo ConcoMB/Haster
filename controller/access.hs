@@ -14,7 +14,7 @@ module Controller.Access where
                           defaultBodyPolicy, BodyPolicy, decodeBody, RqData,
                           getDataFn, badRequest, lookFile, path, resp, seeOther, method,
                           getHeaderM, unauthorized, setHeaderM, askRq, getHeader, lookCookieValue,
-                          CookieLife(Session), addCookie, mkCookie, HasRqData)
+                          CookieLife(Session), addCookie, mkCookie, HasRqData, expireCookie)
   import           Text.Blaze
   import           Text.Blaze.Internal
   import qualified Text.Blaze.Html4.Strict as H
@@ -45,45 +45,53 @@ module Controller.Access where
   import Model.User
   import Acid
 
-  login:: ServerPart Response
+  login :: ServerPart Response
   login = createLoginForm ""
 
-  handleLogin :: AcidState Users -> ServerPart Response
-  handleLogin acid = checkAuth acid createLoginForm
+  logout :: ServerPart Response
+  logout = do
+    expireCookie "cookie_user"
+    expireCookie "cookie_password"
+    return (redirect 302 ("login" :: String) (toResponse ()))
 
-  checkAuth :: AcidState Users -> (String -> ServerPart Response) -> ServerPart Response
-  checkAuth acid errorHandler = do
-       d <- getDataFn authInfo
+  doLogin :: AcidState Users -> ServerPart Response
+  doLogin acid = authorize acid createLoginForm
+
+  authorize :: AcidState Users -> (String -> ServerPart Response) -> ServerPart Response
+  authorize acid errorHandler = do
+       d <- getDataFn authCreds
        case d of
            (Left e) -> errorHandler (Prelude.unlines e)
-           (Right (AuthCredentials user pass)) -> do
-                                                  exists <- query' acid (UserExists user pass)
-                                                  if exists
-                                                  then do 
-                                                        addCookie Session (mkCookie "User" user)
-                                                        addCookie Session (mkCookie "Password" pass)
-                                                        return (redirect 302 ("feed" :: String) (toResponse ()))
-                                                  else do
-                                                        errorHandler "Invalid username or password"
+           (Right (AuthCredentials user pass)) ->  do 
+              exists <- query' acid (UserExists user pass)
+              if exists
+              then do 
+                addCookie Session (mkCookie "cookie_user" user)
+                addCookie Session (mkCookie "cookie_password" pass)
+                return (redirect 302 ("/feed" :: String) (toResponse ()))
+              else do
+                errorHandler "Invalid username or password"
 
   register :: ServerPart Response
   register = createRegisterForm "/register" ""
 
-  handleRegister :: AcidState Users -> ServerPart Response
-  handleRegister acid =
-     do reg <- getDataFn userRq
+  doRegister :: AcidState Users -> ServerPart Response
+  doRegister acid =
+     do reg <- getDataFn registrationRq
         case reg of
           Left e -> badRequest (toResponse (Prelude.unlines e))
-          Right(Registration username password password_confirmation) 
+          Right (Registration username password password_confirmation) 
                     | validRegistration (Registration username password password_confirmation) ->
                       do (User user_id username password) <- update' acid (AddUser username password)
-                         return (redirect 302 ("feed" :: String) (toResponse ()))
+                         addCookie Session (mkCookie "cookie_user" username)
+                         addCookie Session (mkCookie "cookie_password" password)
+                         return (redirect 302 ("/feed" :: String) (toResponse ()))
                     | otherwise -> createRegisterForm  "/register" "User and password can not be empty and passwords must match"
 
   data Registration = Registration { r_username :: String, r_password :: String, r_password_confirmation :: String }
 
-  userRq :: RqData Registration
-  userRq = do
+  registrationRq :: RqData Registration
+  registrationRq = do
             r_username <- look "username"
             r_password <- look "password"
             r_password_confirmation <- look "password_confirmation"
@@ -97,10 +105,8 @@ module Controller.Access where
 
   data AuthCredentials = AuthCredentials { username :: String, password :: String }
 
-  authInfo :: RqData AuthCredentials
-  authInfo = do
-       username <- look "username"
-       password <- look "password"
-       return (AuthCredentials username password)
-
-
+  authCreds :: RqData AuthCredentials
+  authCreds = do
+    username <- look "username"
+    password <- look "password"
+    return (AuthCredentials username password)

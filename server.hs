@@ -70,40 +70,49 @@ main =
                                                         register),
                                       dir "register" (do
                                                         method POST
-                                                        handleRegister userAcid),
+                                                        doRegister userAcid),
                                       dir "login" (do
                                                     method GET
                                                     login),
+                                      dir "logout" (do
+                                                    method GET
+                                                    logout),
                                       dir "login" (do
                                                       method POST
-                                                      handleLogin userAcid),
+                                                      doLogin userAcid),
                                       dir "new_haster" (do
                                                           auth userAcid
                                                           method GET 
-                                                          newHaster acid),
+                                                          doNewHaster acid),
                                       dir "create_haster" (do 
                                                             auth userAcid
                                                             method POST
-                                                            handleNewHaster acid),
+                                                            doCreateHaster acid),
                                       dir "feed" (do 
+                                                    auth userAcid
                                                     method GET
-                                                    handleFeed acid),
+                                                    doFeed acid),
                                       dir "hasters" ( dir "delete" ( path ( (\s -> do 
                                                                                     auth userAcid
                                                                                     method POST
-                                                                                    handleDeleteHaster acid s)))),
+                                                                                    doDeleteHaster acid s)))),
+                                      dir "hasters" ( dir "rehast" ( path ( (\s -> do 
+                                                                                    auth userAcid
+                                                                                    method POST
+                                                                                    doRehast acid s)))),
                                       dir "hasters" ( do path ( (\s -> do 
+                                                          auth userAcid
                                                           method GET
-                                                          showHaster acid s))),
+                                                          doShowHaster acid s))),
                                       seeOther ("/login" :: String) (toResponse ())
                                     ])))
 
 auth :: AcidState Users -> ServerPart ()
 auth acid = do
-          userCookie <- (lookCookieValue "User")
-          passwordCookie <- (lookCookieValue "Password")
-          exists <- query' acid (UserExists userCookie passwordCookie)
-          guard (exists)
+  userCookie <- (lookCookieValue "cookie_user")
+  passwordCookie <- (lookCookieValue "cookie_password")
+  exists <- query' acid (UserExists userCookie passwordCookie)
+  guard (exists)
 
 initialHastersState :: Hasters
 initialHastersState = 

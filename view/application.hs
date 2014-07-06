@@ -52,14 +52,15 @@ basicTemplate title headers body =
       H.link H.! A.rel "stylesheet" H.! A.type_ "text/css" H.! A.href "/static/css/foundation.css"
       H.head $ do
         H.title (H.toHtml title)
-        H.meta H.! A.httpEquiv "Content-Type"
-               H.! A.content "text/html;charset=utf-8"
+        H.meta H.! A.httpEquiv "Content-Type" H.! A.content "text/html;charset=utf-8"
         sequence_ headers
       H.body $ do
         H.div H.! A.class_ "header" $ do
           H.div H.! A.class_ "row" $ do
-            H.div H.! A.class_ "columns small-3" $ do
-              H.h1 "Haster"
+            H.div H.! A.class_ "columns large-3" $ do
+              H.a  H.! A.href "/feed" $ do
+                H.h1 "Haster"
+            H.div H.! A.class_ "columns large-3 float-right small-offset-6" $ do
+              H.a "Logout" H.! A.class_ "logout" H.! A.href "logout" 
         H.div H.! A.class_ "row" $ do
           body
-

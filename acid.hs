@@ -45,39 +45,6 @@ import Happstack.Server.FileServe
 import Model.Haster
 import Model.User
 
-$(deriveSafeCopy 0 'base ''HasterId)
-$(deriveSafeCopy 0 'base ''Hasters)
-$(deriveSafeCopy 0 'base ''Haster)
-
-getHaster :: HasterId -> Query Hasters (Maybe Haster)
-getHaster key = 
-    do Hasters{..} <- ask
-       return (getOne (hasters @= key))
-
-feed :: Query Hasters [Haster]
-feed = do
-             Hasters{..} <- ask
-             let h = IxSet.toList hasters
-             return h 
-
-addHaster :: String -> Update Hasters Haster
-addHaster haster_text =
-    do b@Hasters{..} <- get
-       let haster = Haster { hasterId = nextHasterId
-                             , text  = haster_text
-                           }
-       put $ b { nextHasterId = succ nextHasterId
-               , hasters      = IxSet.insert haster hasters
-               }
-       return haster
-
-deleteHaster :: Haster -> Update Hasters ()
-deleteHaster h = do
-  b@Hasters{..} <- get
-  put $ b { hasters = IxSet.delete h hasters}
-
-$(makeAcidic ''Hasters ['feed, 'getHaster, 'addHaster, 'deleteHaster])
-
 $(deriveSafeCopy 0 'base ''UserId)
 $(deriveSafeCopy 0 'base ''User)
 $(deriveSafeCopy 0 'base ''Users)
@@ -99,21 +66,49 @@ getUser username =
     do Users{..} <- ask
        return (getOne (users @= username))
 
-allUsers :: Query Users [User]
-allUsers = do
-             Users{..} <- ask
-             let all_users = IxSet.toList users
-             return all_users
-
 userExists :: String -> String -> Query Users Bool
 userExists username password = do
                                 Users{..} <- ask
                                 let all_users = IxSet.toList users
-                                return (Prelude.foldr (\(User key user pass) rec -> (username == user && pass == password) || rec) False all_users)
+                                return (Prelude.foldr (\(User key user pass) rec -> 
+                                  (username == user && pass == password) || rec) False all_users)
 
 
-$(makeAcidic ''Users ['addUser, 'getUser, 'allUsers, 'userExists])
+$(makeAcidic ''Users ['addUser, 'getUser, 'userExists])
 
 
+$(deriveSafeCopy 0 'base ''HasterId)
+$(deriveSafeCopy 0 'base ''Hasters)
+$(deriveSafeCopy 0 'base ''Haster)
+
+getHaster :: HasterId -> Query Hasters (Maybe Haster)
+getHaster key = 
+    do Hasters{..} <- ask
+       return (getOne (hasters @= key))
+
+feed :: Query Hasters [Haster]
+feed = do
+             Hasters{..} <- ask
+             let h = IxSet.toList hasters
+             return (Prelude.reverse h)
+
+addHaster :: String -> String -> Update Hasters Haster
+addHaster haster_text haster_username =
+    do b@Hasters{..} <- get
+       let haster = Haster { hasterId = nextHasterId
+                             , text  = haster_text
+                             , username = haster_username
+                           }
+       put $ b { nextHasterId = succ nextHasterId
+               , hasters      = IxSet.insert haster hasters
+               }
+       return haster
+
+deleteHaster :: Haster -> Update Hasters ()
+deleteHaster h = do
+  b@Hasters{..} <- get
+  put $ b { hasters = IxSet.delete h hasters}
+
+$(makeAcidic ''Hasters ['feed, 'getHaster, 'addHaster, 'deleteHaster])
 
 

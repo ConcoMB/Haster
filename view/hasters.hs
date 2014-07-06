@@ -46,61 +46,64 @@ module View.Hasters where
   import Model.Haster
   import View.Application
 
-  createHaster :: Haster -> String -> String -> ServerPart Response
-  createHaster (Haster (HasterId key) text) post_url error_message = ok $ toResponse $
-      basicTemplate "Haster!" [] $ do
-        H.div (H.h1 "New Haster") H.! A.class_ "page-header"
-        H.form H.! A.enctype "multipart/form-data" H.! A.class_ "form-horizontal" 
-          H.! A.method "POST"
-          H.! A.action (stringValue post_url) $ do
-            H.p (H.toHtml error_message)
-            H.div H.! A.class_ "control-group" $ do
-              H.div H.! A.class_ "controls" $ do  
-                H.textarea H.! A.style "resize:none" 
-                           H.! A.type_ "text" 
-                           H.! A.name "haster_text"
-                           H.! A.maxlength (H.toValue (140 ::Integer))  
-                           H.! A.cols (H.toValue (50 ::Integer)) 
-                           H.! A.rows (H.toValue (6 ::Integer)) $ (H.toHtml text)
-            H.div H.! A.class_ "control-group" $ do
-              H.div H.! A.class_ "controls" $ do  
-                H.input H.! A.type_ "hidden" H.! A.name "haster_id" H.! A.value (stringValue (show key))
-                H.input H.! A.type_ "submit" H.! A.value "Hast!" H.! A.class_ "button"
-        H.a "Back to feed" H.! A.href "/feed" H.! A.class_ "button"
-
-
-  buildShowResponse :: Haster -> ServerPart Response
-  buildShowResponse (Haster key text) = 
+  buildShowResponse :: Haster -> String -> ServerPart Response
+  buildShowResponse (Haster key text username) logged_username = 
     ok (toResponse (
           basicTemplate "Haster!"
             []
-            (do H.div ( H.h1 "Look at my haster") H.! A.class_ "page-header"
+            (do H.div ( H.h1 (H.toHtml ("Look at " ++ username ++ "'s haster"))) H.! A.class_ "page-header"
                 H.div H.! A.class_ "hero-unit" $ do
                   H.p (H.toHtml text)
-                buildDeleteLink key
-                H.a "Back" H.! A.href "/feed" H.! A.class_ "button"
+                showButtons key username logged_username
+                H.a "Back" H.! A.href "/feed"
             )
       ))
 
-  buildDeleteLink :: HasterId -> H.Html
-  buildDeleteLink (HasterId key) = H.form
-                                  H.! A.method "POST"
-                                  H.! A.action (stringValue ("/hasters/delete/" ++ show key)) $ do
-                                      H.input H.! A.type_ "submit" H.! A.value "Delete" H.! A.class_ "button alert"
+  showButtons :: HasterId -> String -> String -> H.Html
+  showButtons (HasterId key) haster_user logged_user = 
+    if haster_user == logged_user
+    then 
+      H.form
+        H.! A.method "POST"
+        H.! A.action (stringValue ("/hasters/delete/" ++ show key)) $ do
+            H.input H.! A.type_ "submit" H.! A.value "Delete" H.! A.class_ "button alert"
+    else
+      H.form
+        H.! A.method "POST"
+        H.! A.action (stringValue ("/hasters/rehast/" ++ show key)) $ do
+            H.input H.! A.type_ "submit" H.! A.value "Rehast" H.! A.class_ "button"
 
-  buildResponse :: [Haster] -> ServerPart Response
-  buildResponse hasters = 
+  createHaster :: Haster -> String -> String -> ServerPart Response
+  createHaster (Haster (HasterId key) text username) post_url error_message = 
+    ok $ toResponse $
+      basicTemplate "Haster!" [] $ do
+        H.div (H.h1 "New Haster")
+        H.form H.! A.enctype "multipart/form-data" H.! A.method "POST" H.! A.action (stringValue post_url) $ do
+            H.p (H.toHtml error_message)
+            H.div H.! A.class_ "row" $ do
+              H.div H.! A.class_ "columns large-12 margined" $ do  
+                H.textarea H.! A.style "resize:none" H.! A.type_ "text" H.! A.name "haster_text" H.! A.maxlength (H.toValue (140 ::Integer))  
+                           H.! A.cols (H.toValue (50 ::Integer)) H.! A.rows (H.toValue (6 ::Integer)) $ (H.toHtml text)
+            H.div H.! A.class_ "row" $ do
+              H.div H.! A.class_ "columns large-12 margined" $ do  
+                H.input H.! A.type_ "hidden" H.! A.name "haster_id" H.! A.value (stringValue (show key))
+                H.input H.! A.type_ "submit" H.! A.value "Hast!" H.! A.class_ "button"
+        H.a "Back to feed" H.! A.href "/feed"
+
+  buildFeed :: [Haster] -> ServerPart Response
+  buildFeed hasters = 
     ok (toResponse (
           basicTemplate "Haster!" [] $ do
-            H.div (H.h1 "Hasters") H.! A.class_ "page-header"
+            H.div (H.h1 "All Hasters") H.! A.class_ "page-header"
+            H.a "Hast it up!" H.! A.href "/new_haster" H.! A.class_ "button"
             if Prelude.null hasters
             then
-              H.h2 "No hasters"
+              H.h3 "No hasters"
             else
-              forM_ hasters (H.div . (\(Haster key text) -> H.a H.! (buildLink key) $ H.toHtml text)) H.! A.class_ "haster"
+              forM_ hasters (\(Haster (HasterId key) text username) -> 
+                H.a H.! A.href (stringValue ("/hasters/" ++ (show key))) $ do
+                  H.div H.! A.class_ "haster" $ do
+                    H.p (H.toHtml (username ++ " hasted:"))
+                    H.p (H.toHtml text)) 
 
       ))
-
-  buildLink :: HasterId -> H.Attribute
-  buildLink (HasterId key) = A.href (stringValue ("/hasters/" ++ (show key)))
-

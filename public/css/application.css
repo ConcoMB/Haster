@@ -2,6 +2,15 @@
 
 }
 
+.float-right {
+  float: right;
+}
+
+.logout {
+  line-height: 4em !important;
+  color: white !important;
+}
+
 .margined {
   margin: 10px 0;
 }
@@ -11,6 +20,14 @@
   border-radius: 5px;
   padding: 10px; 
   margin: 10px 0;
+}
+
+.haster p {
+  color: black !important;
+}
+
+p {
+  margin-bottom: 0.75rem !important;
 }
 
 .header {

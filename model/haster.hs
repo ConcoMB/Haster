@@ -44,14 +44,14 @@ import qualified Data.IxSet as IxSet
 import Happstack.Server.FileServe
 import System.Log.Logger
 
-
 newtype HasterId = HasterId { aHasterId :: Integer } deriving (Eq, Ord, Show, Read, Data, Enum, Typeable)
 
-data Haster = Haster { hasterId :: HasterId, text :: String } deriving (Eq, Ord, Read, Show, Data, Typeable)
+data Haster = Haster { hasterId :: HasterId, text :: String, username :: String } deriving (Eq, Ord, Read, Show, Data, Typeable)
 
 isValidHaster :: Haster -> Bool
-isValidHaster (Haster _ []) = False
-isValidHaster (Haster _ t) = True
+isValidHaster (Haster _ [] _) = False
+isValidHaster (Haster _ _ []) = False
+isValidHaster (Haster _ t u) = True
 
 instance Indexable Haster where
   empty = ixSet
@@ -62,15 +62,4 @@ data Hasters = Hasters
     , hasters      :: IxSet Haster
     }
     deriving (Data, Typeable)
-
-getText (Haster _ text) = text
-getId (Haster key _) = key
-
-
-
-
-
-
-
-
 
