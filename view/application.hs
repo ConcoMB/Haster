@@ -26,21 +26,6 @@ import System.Log.Logger ( updateGlobalLogger
                          , Priority(..)
                          )
 import Happstack.Server.Internal.Types
-import Data.ByteString
-import Data.ByteString.Base64 as Base64
-import qualified Data.Text as B
-import Data.ByteString.Char8 as C
-import Data.Text.Encoding
-import Data.Maybe (fromMaybe)
-import Data.Map as M
-import Data.Data            ( Data, Typeable )
-import Data.Acid            ( AcidState, Query, Update
-                            , makeAcidic, openLocalState )
-import Data.Acid.Advanced   ( query', update' )
-import Data.Acid.Local      ( createCheckpointAndClose )
-import Data.SafeCopy        ( SafeCopy, base, deriveSafeCopy )
-import Data.IxSet           ( Indexable(..), IxSet(..), (@=)
-                            , Proxy(..), getOne, ixFun, ixSet )
 import qualified Data.IxSet as IxSet
 import Happstack.Server.FileServe
 import System.Log.Logger

@@ -26,69 +26,53 @@ module View.Access where
                            , Priority(..)
                            )
   import Happstack.Server.Internal.Types
-  import Data.ByteString
-  import Data.ByteString.Base64 as Base64
-  import qualified Data.Text as B
-  import Data.ByteString.Char8 as C
-  import Data.Text.Encoding
-  import Data.Map as M
-  import Data.Data            ( Data, Typeable )
-  import Data.Acid            ( AcidState, Query, Update
-                              , makeAcidic, openLocalState )
-  import Data.Acid.Advanced   ( query', update' )
-  import Data.Acid.Local      ( createCheckpointAndClose )
-  import Data.SafeCopy        ( SafeCopy, base, deriveSafeCopy )
-  import Data.IxSet           ( Indexable(..), IxSet(..), (@=)
-                              , Proxy(..), getOne, ixFun, ixSet )
-  import qualified Data.IxSet as IxSet
   import Happstack.Server.FileServe
   import System.Log.Logger
   import Model.User
   import View.Application
 
   createRegisterForm :: String -> String -> ServerPart Response
-  createRegisterForm post_url error_message = ok $ toResponse $
-      basicTemplate "Haster!" [] $ do
-        H.div (H.h1 "Register to haster") 
-        H.form H.! A.enctype "multipart/form-data" H.! A.class_ "form-horizontal" 
-          H.! A.method "POST"
-          H.! A.action (stringValue post_url) $ do
-            H.p (H.toHtml error_message)
-            H.div H.! A.class_ "row" $ do
-              H.div H.! A.class_ "large-12 columns margined" $ do
-                H.label "Username"
-                H.br
-                H.input H.! A.type_ "text" H.! A.name "username"
-              H.div H.! A.class_ "large-12 columns margined" $ do
-                H.label "Password"
-                H.br
-                H.input H.! A.type_ "password" H.! A.name "password"
-              H.div H.! A.class_ "large-12 columns margined" $ do
-                H.label "Password confirmation"
-                H.br
-                H.input H.! A.type_ "password" H.! A.name "password_confirmation"
-              H.div H.! A.class_ "large-12 columns margined" $ do
-                H.input H.! A.type_ "submit" H.! A.value "Register" H.! A.class_ "button"
-        H.a "Back" H.! A.href "/feed"
+  createRegisterForm post_url error_message = ok $ toResponse $ basicTemplate "Haster!" [] $ do
+    H.div (H.h1 "Register to haster") 
+    H.form H.! A.enctype "multipart/form-data" H.! A.class_ "form-horizontal" 
+      H.! A.method "POST"
+      H.! A.action (stringValue post_url) $ do
+        H.p (H.toHtml error_message)
+        H.div H.! A.class_ "row" $ do
+          H.div H.! A.class_ "large-12 columns margined" $ do
+            H.label "Username"
+            H.br
+            H.input H.! A.type_ "text" H.! A.name "username"
+          H.div H.! A.class_ "large-12 columns margined" $ do
+            H.label "Password"
+            H.br
+            H.input H.! A.type_ "password" H.! A.name "password"
+          H.div H.! A.class_ "large-12 columns margined" $ do
+            H.label "Password confirmation"
+            H.br
+            H.input H.! A.type_ "password" H.! A.name "password_confirmation"
+          H.div H.! A.class_ "large-12 columns margined" $ do
+            H.input H.! A.type_ "submit" H.! A.value "Register" H.! A.class_ "button"
+    H.a "Back" H.! A.href "/feed"
 
   createLoginForm :: String -> ServerPart Response
-  createLoginForm error_message = ok (toResponse (basicTemplate "Haster!" [] $ do
-        H.div H.! A.class_ "row" $ do
-          H.h1 "Welcome to haster"
-          H.form H.! A.enctype "multipart/form-data" H.! A.class_ "form-horizontal margined" 
-            H.! A.method "POST"
-            H.! A.action (stringValue "/login") $ do
-              H.p (H.toHtml error_message)
-              H.div H.! A.class_ "row" $ do
-                H.div H.! A.class_ "large-12 columns margined" $ do
-                  H.label "Username"
-                  H.br
-                  H.input H.! A.type_ "text" H.! A.name "username"
-                H.div H.! A.class_ "large-12 columns margined" $ do
-                  H.label "Password"
-                  H.br
-                  H.input H.! A.type_ "password" H.! A.name "password"
-                H.div H.! A.class_ "large-12 columns margined" $ do
-                  H.input H.! A.type_ "submit" H.! A.value "Login" H.! A.class_ "button"
-          H.a "Register" H.! A.href "/register" H.! A.class_ "margined"
-        ))
+  createLoginForm error_message = ok $ toResponse $ basicTemplate "Haster!" [] $ do
+    H.div H.! A.class_ "row" $ do
+      H.h1 "Welcome to haster"
+      H.h3 "Haskel + Twitter -> Haster"
+      H.form H.! A.enctype "multipart/form-data" H.! A.class_ "form-horizontal margined" 
+        H.! A.method "POST"
+        H.! A.action (stringValue "/login") $ do
+          H.p (H.toHtml error_message)
+          H.div H.! A.class_ "row" $ do
+            H.div H.! A.class_ "large-12 columns margined" $ do
+              H.label "Username"
+              H.br
+              H.input H.! A.type_ "text" H.! A.name "username"
+            H.div H.! A.class_ "large-12 columns margined" $ do
+              H.label "Password"
+              H.br
+              H.input H.! A.type_ "password" H.! A.name "password"
+            H.div H.! A.class_ "large-12 columns margined" $ do
+              H.input H.! A.type_ "submit" H.! A.value "Login" H.! A.class_ "button"
+      H.a "Register" H.! A.href "/register" H.! A.class_ "margined"

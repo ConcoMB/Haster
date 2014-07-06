@@ -15,10 +15,6 @@ import Happstack.Server(Method(GET, HEAD, POST, DELETE), dir, methodM, ServerPar
                         getDataFn, badRequest, lookFile, path, resp, seeOther, method,
                         getHeaderM, unauthorized, setHeaderM, askRq, getHeader, lookCookieValue,
                         CookieLife(Session), addCookie, mkCookie, HasRqData)
-import           Text.Blaze
-import           Text.Blaze.Internal
-import qualified Text.Blaze.Html4.Strict as H
-import qualified Text.Blaze.Html4.Strict.Attributes as A
 import System.IO
 import System.Log.Logger ( updateGlobalLogger
                          , rootLoggerName

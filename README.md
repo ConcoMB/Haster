@@ -1,14 +1,14 @@
 Haster!
 ========================
   
-Trabajo Practico Final - Programación Funcional
 Twitter like app in Haskell using Happstack and IxSet
 
 Instructions
 ==============
-[`export PATH=~/.cabal/bin:$PATH`]
 
-[`cabal update`]
+`export PATH=~/.cabal/bin:$PATH`
+
+`cabal update`
 
 `cabal install happstack-server`
 
@@ -16,7 +16,6 @@ Instructions
 
 `cabal install acid-state`
 
+Compile it: `ghc -threaded server.hs -o server`
 
-To compile: `ghc -threaded server.hs -o server`
-
-To run server `./server`
+Run it: `./server`
