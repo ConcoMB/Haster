@@ -1,5 +1,9 @@
-.container {
+h1 {
+  font-family: 'Pacifico' !important;
+}
 
+body, a, input {
+  font-family: 'Architects Daughter' !important;
 }
 
 .float-right {

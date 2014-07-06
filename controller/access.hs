@@ -41,7 +41,7 @@ module Controller.Access where
   import Data.IxSet           ( Indexable(..), IxSet(..), (@=)
                               , Proxy(..), getOne, ixFun, ixSet )
   import qualified Data.IxSet as IxSet
-  import View.User
+  import View.Access
   import Model.User
   import Acid
 
